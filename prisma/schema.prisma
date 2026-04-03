@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  CITIZEN
+  CIVIL_SOCIETY_ORG
+  INTERNAL
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  REFUSED
+  BLOCKED
+  SUSPENDED
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum AgeRange {
+  UNDER_25
+  FROM_25_TO_34
+  FROM_35_TO_44
+  FROM_45_TO_59
+  ABOVE_60
+}
+
+enum RoleCode {
+  CITIZEN
+  ORG
+  PRESIDENT
+  RAPPORTEUR_GENERAL
+  ADMIN
+}
+
+enum ProposalStatus {
+  RECU
+  EN_COURS_ANALYSE
+  ACCEPTEE
+  REJETEE
+  NON_ACTUALISEE
+}
+
+enum ReportStatus {
+  NON_TRAITE
+  REJETE
+  CONVERTI_EN_THEME
+}
+
+enum EntityType {
+  CENTRAL
+  LOCAL
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+model User {
+  id                        String               @id @default(cuid())
+  userType                  UserType
+  firstName                 String
+  lastName                  String
+  pseudonym                 String               @unique
+  email                     String               @unique
+  phone                     String?
+  nin                       String?              @unique
+  passwordHash              String
+  sex                       Sex?
+  ageRange                  AgeRange?
+  organizationName          String?
+  emailVerifiedAt           DateTime?
+  twoFactorEnabled          Boolean              @default(false)
+  accountStatus             AccountStatus        @default(PENDING)
+  chamberId                 String?
+  professionalStatusId      String?
+  wilayaId                  String?
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  chamber                   Chamber?             @relation(fields: [chamberId], references: [id])
+  professionalStatus        ProfessionalStatus?  @relation(fields: [professionalStatusId], references: [id])
+  wilaya                    Wilaya?              @relation(fields: [wilayaId], references: [id])
+  roles                     UserRole[]
+  proposals                 Proposal[]
+  reports                   Report[]
+  notifications             Notification[]
+  accountBlocks             AccountBlock[]       @relation("blockedUser")
+  blockActions              AccountBlock[]       @relation("blockedByUser")
+  auditActions              AuditLog[]           @relation("auditActor")
+  proposalComments          ProposalComment[]
+  proposalLikes             ProposalLike[]
+  uploadedProposalFiles     ProposalAttachment[]
+  uploadedReportFiles       ReportAttachment[]
+  proposalStatusChanges     ProposalStatusHistory[]
+  reportStatusChanges       ReportStatusHistory[]
+  publishedSummaries        ProposalSummary[]
+  publishedFinalReports     ProposalFinalReport[]
+}
+
+model Role {
+  id        String     @id @default(cuid())
+  code      RoleCode   @unique
+  label     String
+  userRoles UserRole[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Chamber {
+  id                     String                  @id @default(cuid())
+  nameFr                 String
+  nameAr                 String
+  scopeType              String
+  users                  User[]
+  themeCategories        ThemeCategory[]
+  centralAdministrations CentralAdministration[]
+  localCollectivities    LocalCollectivity[]
+  proposals              Proposal[]
+  reports                Report[]
+}
+
+model ThemeCategory {
+  id          String     @id @default(cuid())
+  nameFr      String
+  nameAr      String
+  isActive    Boolean    @default(true)
+  chamberId   String
+  chamber     Chamber    @relation(fields: [chamberId], references: [id])
+  proposals   Proposal[]
+}
+
+model ReportCategory {
+  id       String   @id @default(cuid())
+  nameFr   String
+  nameAr   String
+  isActive Boolean  @default(true)
+  reports  Report[]
+}
+
+model Wilaya {
+  id       String   @id @default(cuid())
+  code     String   @unique
+  nameFr   String
+  nameAr   String
+  isActive Boolean  @default(true)
+  users    User[]
+  localCollectivities LocalCollectivity[]
+}
+
+model ProfessionalStatus {
+  id       String   @id @default(cuid())
+  nameFr   String
+  nameAr   String
+  isActive Boolean  @default(true)
+  users    User[]
+}
+
+model CentralAdministration {
+  id        String    @id @default(cuid())
+  nameFr    String
+  nameAr    String
+  isActive  Boolean   @default(true)
+  chamberId String
+  chamber   Chamber   @relation(fields: [chamberId], references: [id])
+  reports   Report[]
+}
+
+model LocalCollectivity {
+  id        String    @id @default(cuid())
+  nameFr    String
+  nameAr    String
+  isActive  Boolean   @default(true)
+  wilayaId  String
+  chamberId String
+  wilaya    Wilaya    @relation(fields: [wilayaId], references: [id])
+  chamber   Chamber   @relation(fields: [chamberId], references: [id])
+  reports   Report[]
+}
+
+model Proposal {
+  id                         String                  @id @default(cuid())
+  submittedByUserId          String
+  titleFr                    String
+  titleAr                    String
+  descriptionFr              String                  @db.Text
+  descriptionAr              String                  @db.Text
+  categoryId                 String
+  exerciseYear               Int
+  currentStatus              ProposalStatus          @default(RECU)
+  assignedChamberId          String
+  assignedPresidentUserId    String?
+  transmittedToRapporteurAt  DateTime?
+  finalDecidedByUserId       String?
+  finalDecisionAt            DateTime?
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  submittedByUser            User                    @relation(fields: [submittedByUserId], references: [id])
+  category                   ThemeCategory           @relation(fields: [categoryId], references: [id])
+  assignedChamber            Chamber                 @relation(fields: [assignedChamberId], references: [id])
+  attachments                ProposalAttachment[]
+  comments                   ProposalComment[]
+  likes                      ProposalLike[]
+  statusHistory              ProposalStatusHistory[]
+  summaries                  ProposalSummary[]
+  finalReports               ProposalFinalReport[]
+  sourceReport               Report?                  @relation("ReportGeneratedProposal")
+}
+
+model ProposalAttachment {
+  id               String   @id @default(cuid())
+  proposalId       String
+  fileName         String
+  mimeType         String
+  fileSize         Int
+  storagePath      String
+  uploadedByUserId String
+  createdAt        DateTime @default(now())
+  proposal         Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  uploadedByUser   User     @relation(fields: [uploadedByUserId], references: [id])
+}
+
+model ProposalComment {
+  id         String   @id @default(cuid())
+  proposalId String
+  userId     String
+  body       String   @db.Text
+  isPublic   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model ProposalLike {
+  id         String   @id @default(cuid())
+  proposalId String
+  userId     String
+  createdAt  DateTime @default(now())
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([proposalId, userId])
+}
+
+model ProposalStatusHistory {
+  id              String         @id @default(cuid())
+  proposalId      String
+  fromStatus      ProposalStatus?
+  toStatus        ProposalStatus
+  changedByUserId String
+  note            String?        @db.Text
+  createdAt       DateTime       @default(now())
+  proposal        Proposal       @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  changedByUser   User           @relation(fields: [changedByUserId], references: [id])
+}
+
+model ProposalSummary {
+  id                String   @id @default(cuid())
+  proposalId        String
+  summaryText       String   @db.Text
+  publishedByUserId String
+  publishedAt       DateTime
+  proposal          Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  publishedByUser   User     @relation(fields: [publishedByUserId], references: [id])
+}
+
+model ProposalFinalReport {
+  id               String   @id @default(cuid())
+  proposalId       String
+  fileName         String
+  storagePath      String
+  uploadedByUserId String
+  publishedAt      DateTime
+  proposal         Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  uploadedByUser   User     @relation(fields: [uploadedByUserId], references: [id])
+}
+
+model Report {
+  id                      String                  @id @default(cuid())
+  submittedByUserId       String
+  subject                 String
+  targetEntityName        String
+  targetEntityType        EntityType
+  centralAdministrationId String?
+  localCollectivityId     String?
+  address                 String
+  relationToEntity        String
+  circumstance            String
+  factsLocation           String
+  factsPeriodicity        String
+  irregularityDescription String                  @db.Text
+  reportCategoryId        String
+  reportDate              DateTime
+  currentStatus           ReportStatus            @default(NON_TRAITE)
+  assignedChamberId       String
+  assignedPresidentUserId String?
+  generatedProposalId     String?                 @unique
+  acknowledgementNumber   String                  @unique
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  submittedByUser         User                    @relation(fields: [submittedByUserId], references: [id])
+  centralAdministration   CentralAdministration?  @relation(fields: [centralAdministrationId], references: [id])
+  localCollectivity       LocalCollectivity?      @relation(fields: [localCollectivityId], references: [id])
+  reportCategory          ReportCategory          @relation(fields: [reportCategoryId], references: [id])
+  assignedChamber         Chamber                 @relation(fields: [assignedChamberId], references: [id])
+  generatedProposal       Proposal?               @relation("ReportGeneratedProposal", fields: [generatedProposalId], references: [id])
+  attachments             ReportAttachment[]
+  statusHistory           ReportStatusHistory[]
+}
+
+model ReportAttachment {
+  id               String   @id @default(cuid())
+  reportId         String
+  fileName         String
+  mimeType         String
+  fileSize         Int
+  storagePath      String
+  uploadedByUserId String
+  createdAt        DateTime @default(now())
+  report           Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  uploadedByUser   User     @relation(fields: [uploadedByUserId], references: [id])
+}
+
+model ReportStatusHistory {
+  id              String        @id @default(cuid())
+  reportId        String
+  fromStatus      ReportStatus?
+  toStatus        ReportStatus
+  changedByUserId String
+  note            String?       @db.Text
+  createdAt       DateTime      @default(now())
+  report          Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  changedByUser   User          @relation(fields: [changedByUserId], references: [id])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String              @db.Text
+  channel   NotificationChannel
+  isRead    Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  action       String
+  resourceType String
+  resourceId   String
+  metadataJson Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  actorUser    User?    @relation("auditActor", fields: [actorUserId], references: [id])
+}
+
+model AccountBlock {
+  id              String   @id @default(cuid())
+  userId          String
+  blockedByUserId String
+  reason          String   @db.Text
+  startsAt        DateTime
+  endsAt          DateTime?
+  isPermanent     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  user            User     @relation("blockedUser", fields: [userId], references: [id], onDelete: Cascade)
+  blockedByUser   User     @relation("blockedByUser", fields: [blockedByUserId], references: [id])
+}
