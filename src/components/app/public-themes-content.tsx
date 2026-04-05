@@ -5,11 +5,13 @@ import Link from "next/link";
 import { DataTableCard } from "@/components/app/data-table-card";
 import { useLocale, useTranslations } from "@/components/app/locale-provider";
 import { PageShell } from "@/components/app/page-shell";
+import { PublicThemeSuggestionForm } from "@/components/app/public-theme-suggestion-form";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatMessage, getIntlLocale } from "@/lib/i18n";
 import type { ProposalListItem } from "@/lib/api-types";
+import { nextExerciseYear } from "@/lib/utils";
 
 export function PublicThemesContent({
   themes,
@@ -28,6 +30,7 @@ export function PublicThemesContent({
 
   return (
     <PageShell eyebrow={t.themesPage.eyebrow} title={t.themesPage.title} description={t.themesPage.description}>
+      <PublicThemeSuggestionForm categoryOptions={categoryOptions} exerciseYear={nextExerciseYear()} />
       <DataTableCard
         title={t.themesPage.cardTitle}
         description={t.themesPage.cardDescription}

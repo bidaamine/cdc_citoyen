@@ -1,0 +1,38 @@
+
+> cdc-citoyen@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.28.0.1:3000
+- Environments: .env
+✓ Ready in 942ms
+Creating turbopack project { dir: 'C:\\Users\\mbida\\Desktop\\cdc_citoyen', testMode: true }
+
+ GET /themes 200 in 1615ms (next.js: 409ms, application-code: 1206ms)
+ GET /reports 200 in 208ms (next.js: 45ms, application-code: 163ms)
+ GET /themes/proposal-transport-2027 200 in 2.1s (next.js: 1732ms, application-code: 404ms)
+ GET /themes/proposal-hospital-2027 200 in 141ms (next.js: 16ms, application-code: 125ms)
+ GET /reports/report-subject-finance-2027 200 in 3.0s (next.js: 2.8s, application-code: 233ms)
+ GET /signalement 200 in 265ms (next.js: 138ms, application-code: 126ms)
+ GET /themes 200 in 50ms (next.js: 6ms, application-code: 45ms)
+ GET /reports 200 in 143ms (next.js: 5ms, application-code: 138ms)
+ GET /stats 200 in 2.5s (next.js: 2.3s, application-code: 153ms)
+ GET / 200 in 174ms (next.js: 61ms, application-code: 113ms)
+ GET /participation 200 in 142ms (next.js: 69ms, application-code: 73ms)
+ GET /signalement 200 in 51ms (next.js: 6ms, application-code: 45ms)
+ GET /stats 200 in 51ms (next.js: 5ms, application-code: 46ms)
+✓ Compiled in 625ms
+ GET / 200 in 55ms (next.js: 4ms, application-code: 51ms)
+ GET /reports 200 in 34ms (next.js: 4ms, application-code: 30ms)
+ GET /themes 200 in 33ms (next.js: 3ms, application-code: 30ms)
+ GET /signalement 200 in 35ms (next.js: 4ms, application-code: 31ms)
+ GET /themes 200 in 42ms (next.js: 5ms, application-code: 37ms)
+ GET /themes 200 in 10ms (next.js: 2ms, application-code: 7ms)
+ GET /themes 200 in 24ms (next.js: 3ms, application-code: 21ms)
+ GET /participation 200 in 37ms (next.js: 5ms, application-code: 32ms)
+ GET /signalement 200 in 34ms (next.js: 3ms, application-code: 30ms)
+ GET /themes 200 in 27ms (next.js: 3ms, application-code: 24ms)
+ GET /reports 200 in 28ms (next.js: 2ms, application-code: 26ms)
+ GET /stats 200 in 32ms (next.js: 5ms, application-code: 27ms)
+ GET / 200 in 43ms (next.js: 5ms, application-code: 38ms)

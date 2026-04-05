@@ -25,10 +25,10 @@ export function getIntlLocale(locale: Locale) {
   return locale === "ar" ? "ar-DZ" : "fr-FR";
 }
 
-export const translations = {
+export const translations: Record<Locale, typeof fr> = {
   fr,
-  ar,
-} as const;
+  ar: ar as typeof fr,
+};
 
 export type TranslationTree = (typeof translations)[typeof DEFAULT_LOCALE];
 

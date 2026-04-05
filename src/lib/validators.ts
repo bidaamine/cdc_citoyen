@@ -63,3 +63,16 @@ export const reportSchema = z.object({
   irregularityDescription: z.string().min(80),
   reportCategoryId: z.string().min(1),
 });
+
+export const reportSubjectSchema = z.object({
+  titleFr: z.string().min(5),
+  titleAr: z.string().min(5),
+  descriptionFr: z.string().min(40),
+  descriptionAr: z.string().min(40),
+  categoryId: z.string().min(1),
+  exerciseYear: z.number().int().min(2027),
+});
+
+export const publicCommentSchema = z.object({
+  body: z.string().min(3).max(1000),
+});

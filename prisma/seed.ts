@@ -1,10 +1,12 @@
 import {
+  AgeRange,
   AccountStatus,
   NotificationChannel,
   PrismaClient,
   ProposalStatus,
   ReportStatus,
   RoleCode,
+  Sex,
   UserType,
 } from "@prisma/client";
 import { hashSync } from "bcryptjs";
@@ -61,6 +63,8 @@ async function main() {
     { id: "prof-2", nameFr: "Profession liberale", nameAr: "مهنة حرة" },
     { id: "prof-3", nameFr: "Etudiant", nameAr: "طالب" },
     { id: "prof-4", nameFr: "Retraite", nameAr: "متقاعد" },
+    { id: "prof-5", nameFr: "Entrepreneur", nameAr: "entrepreneur" },
+    { id: "prof-6", nameFr: "Sans emploi", nameAr: "sans-emploi" },
   ]) {
     await prisma.professionalStatus.upsert({
       where: { id: status.id },
@@ -74,6 +78,7 @@ async function main() {
     { id: "wil-31", code: "31", nameFr: "Oran", nameAr: "وهران" },
     { id: "wil-25", code: "25", nameFr: "Constantine", nameAr: "قسنطينة" },
     { id: "wil-19", code: "19", nameFr: "Setif", nameAr: "سطيف" },
+    { id: "wil-23", code: "23", nameFr: "Annaba", nameAr: "annaba" },
   ]) {
     await prisma.wilaya.upsert({
       where: { code: wilaya.code },
@@ -163,6 +168,21 @@ async function main() {
     },
   });
 
+  await prisma.reportCategory.upsert({
+    where: { id: "report-public-procurement" },
+    update: {
+      nameFr: "Marches publics",
+      nameAr: "marches-publics",
+      isActive: true,
+    },
+    create: {
+      id: "report-public-procurement",
+      nameFr: "Marches publics",
+      nameAr: "marches-publics",
+      isActive: true,
+    },
+  });
+
   await prisma.centralAdministration.upsert({
     where: { id: "central-health" },
     update: {
@@ -197,6 +217,23 @@ async function main() {
     },
   });
 
+  await prisma.centralAdministration.upsert({
+    where: { id: "central-finance" },
+    update: {
+      nameFr: "Ministere des Finances",
+      nameAr: "ministere-finances",
+      chamberId: chamberFinance.id,
+      isActive: true,
+    },
+    create: {
+      id: "central-finance",
+      nameFr: "Ministere des Finances",
+      nameAr: "ministere-finances",
+      chamberId: chamberFinance.id,
+      isActive: true,
+    },
+  });
+
   await prisma.localCollectivity.upsert({
     where: { id: "local-alger-centre" },
     update: {
@@ -216,6 +253,25 @@ async function main() {
     },
   });
 
+  await prisma.localCollectivity.upsert({
+    where: { id: "local-oran-centre" },
+    update: {
+      nameFr: "APC Oran Centre",
+      nameAr: "apc-oran-centre",
+      wilayaId: "wil-31",
+      chamberId: chamberLocal.id,
+      isActive: true,
+    },
+    create: {
+      id: "local-oran-centre",
+      nameFr: "APC Oran Centre",
+      nameAr: "apc-oran-centre",
+      wilayaId: "wil-31",
+      chamberId: chamberLocal.id,
+      isActive: true,
+    },
+  });
+
   const userSeeds = [
     {
       id: "user-citizen",
@@ -228,8 +284,13 @@ async function main() {
       roleCode: RoleCode.CITIZEN,
       chamberId: null,
       phone: "0550000001",
+      nin: "111111111111111111",
       wilayaId: "wil-16",
       professionalStatusId: "prof-1",
+      sex: Sex.FEMALE,
+      ageRange: AgeRange.FROM_25_TO_34,
+      emailVerifiedAt: new Date("2026-01-08T08:00:00.000Z"),
+      twoFactorEnabled: false,
     },
     {
       id: "user-org",
@@ -242,9 +303,14 @@ async function main() {
       roleCode: RoleCode.ORG,
       chamberId: null,
       phone: "0550000002",
+      nin: "222222222222222222",
       organizationName: "Forum des associations",
       wilayaId: "wil-31",
       professionalStatusId: "prof-2",
+      sex: Sex.MALE,
+      ageRange: AgeRange.FROM_35_TO_44,
+      emailVerifiedAt: null,
+      twoFactorEnabled: false,
     },
     {
       id: "user-president-finance",
@@ -257,8 +323,13 @@ async function main() {
       roleCode: RoleCode.PRESIDENT,
       chamberId: chamberFinance.id,
       phone: "0550000003",
+      nin: "333333333333333333",
       wilayaId: "wil-16",
       professionalStatusId: "prof-1",
+      sex: Sex.MALE,
+      ageRange: AgeRange.FROM_45_TO_59,
+      emailVerifiedAt: new Date("2025-12-20T08:00:00.000Z"),
+      twoFactorEnabled: true,
     },
     {
       id: "user-president-local",
@@ -271,8 +342,13 @@ async function main() {
       roleCode: RoleCode.PRESIDENT,
       chamberId: chamberLocal.id,
       phone: "0550000006",
+      nin: "666666666666666666",
       wilayaId: "wil-25",
       professionalStatusId: "prof-1",
+      sex: Sex.FEMALE,
+      ageRange: AgeRange.FROM_45_TO_59,
+      emailVerifiedAt: new Date("2025-12-21T08:00:00.000Z"),
+      twoFactorEnabled: true,
     },
     {
       id: "user-rapporteur",
@@ -285,8 +361,13 @@ async function main() {
       roleCode: RoleCode.RAPPORTEUR_GENERAL,
       chamberId: chamberFinance.id,
       phone: "0550000004",
+      nin: "444444444444444444",
       wilayaId: "wil-16",
       professionalStatusId: "prof-1",
+      sex: Sex.MALE,
+      ageRange: AgeRange.FROM_35_TO_44,
+      emailVerifiedAt: new Date("2025-12-22T08:00:00.000Z"),
+      twoFactorEnabled: true,
     },
     {
       id: "user-admin",
@@ -299,8 +380,71 @@ async function main() {
       roleCode: RoleCode.ADMIN,
       chamberId: chamberFinance.id,
       phone: "0550000005",
+      nin: "555555555555555555",
       wilayaId: "wil-16",
       professionalStatusId: "prof-1",
+      sex: Sex.MALE,
+      ageRange: AgeRange.FROM_35_TO_44,
+      emailVerifiedAt: new Date("2025-12-19T08:00:00.000Z"),
+      twoFactorEnabled: true,
+    },
+    {
+      id: "user-citizen-2",
+      email: "farid@cdc.dz",
+      firstName: "Farid",
+      lastName: "Khellaf",
+      pseudonym: "farid-observateur",
+      userType: UserType.CITIZEN,
+      accountStatus: AccountStatus.ACTIVE,
+      roleCode: RoleCode.CITIZEN,
+      chamberId: null,
+      phone: "0550000011",
+      nin: "777777777777777777",
+      wilayaId: "wil-31",
+      professionalStatusId: "prof-5",
+      sex: Sex.MALE,
+      ageRange: AgeRange.FROM_35_TO_44,
+      emailVerifiedAt: new Date("2026-01-10T10:00:00.000Z"),
+      twoFactorEnabled: false,
+    },
+    {
+      id: "user-citizen-3",
+      email: "amal@cdc.dz",
+      firstName: "Amal",
+      lastName: "Bouziane",
+      pseudonym: "amal-civique",
+      userType: UserType.CITIZEN,
+      accountStatus: AccountStatus.BLOCKED,
+      roleCode: RoleCode.CITIZEN,
+      chamberId: null,
+      phone: "0550000012",
+      nin: "888888888888888888",
+      wilayaId: "wil-23",
+      professionalStatusId: "prof-6",
+      sex: Sex.FEMALE,
+      ageRange: AgeRange.FROM_25_TO_34,
+      emailVerifiedAt: new Date("2026-02-03T11:00:00.000Z"),
+      twoFactorEnabled: false,
+    },
+    {
+      id: "user-org-2",
+      email: "association@cdc.dz",
+      firstName: "Maison",
+      lastName: "Citoyenne",
+      pseudonym: "maison-citoyenne",
+      userType: UserType.CIVIL_SOCIETY_ORG,
+      accountStatus: AccountStatus.ACTIVE,
+      roleCode: RoleCode.ORG,
+      chamberId: null,
+      phone: "0550000013",
+      nin: "999999999999999999",
+      organizationName: "Maison citoyenne d'Oran",
+      wilayaId: "wil-31",
+      professionalStatusId: "prof-2",
+      sex: Sex.FEMALE,
+      ageRange: AgeRange.FROM_35_TO_44,
+      emailVerifiedAt: new Date("2026-01-16T09:30:00.000Z"),
+      twoFactorEnabled: false,
     },
   ] as const;
 
@@ -314,11 +458,16 @@ async function main() {
         lastName: seed.lastName,
         pseudonym: seed.pseudonym,
         phone: seed.phone,
+        nin: seed.nin,
         accountStatus: seed.accountStatus,
         chamberId: seed.chamberId,
         organizationName: "organizationName" in seed ? seed.organizationName ?? null : null,
         wilayaId: seed.wilayaId,
         professionalStatusId: seed.professionalStatusId,
+        sex: seed.sex,
+        ageRange: seed.ageRange,
+        emailVerifiedAt: seed.emailVerifiedAt,
+        twoFactorEnabled: seed.twoFactorEnabled,
       },
       create: {
         id: seed.id,
@@ -328,12 +477,17 @@ async function main() {
         pseudonym: seed.pseudonym,
         email: seed.email,
         phone: seed.phone,
+        nin: seed.nin,
         passwordHash: hashSync("demo12345", 10),
         accountStatus: seed.accountStatus,
         chamberId: seed.chamberId,
         organizationName: "organizationName" in seed ? seed.organizationName ?? null : null,
         wilayaId: seed.wilayaId,
         professionalStatusId: seed.professionalStatusId,
+        sex: seed.sex,
+        ageRange: seed.ageRange,
+        emailVerifiedAt: seed.emailVerifiedAt,
+        twoFactorEnabled: seed.twoFactorEnabled,
       },
     });
 
@@ -484,6 +638,78 @@ async function main() {
     },
   });
 
+  const proposalRejected = await prisma.proposal.upsert({
+    where: { id: "proposal-school-canteen-2027" },
+    update: {
+      titleFr: "Controle de la restauration scolaire",
+      titleAr: "controle-restauration-scolaire",
+      descriptionFr:
+        "Proposition de controle sur les marches de restauration scolaire, la qualite des prestations et la traçabilite des denrees.",
+      descriptionAr: "controle-restauration-scolaire",
+      categoryId: themeLocal.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.REJETEE,
+      assignedChamberId: chamberLocal.id,
+      assignedPresidentUserId: seededUsers["user-president-local"],
+      transmittedToRapporteurAt: new Date("2026-03-14T08:00:00.000Z"),
+      finalDecidedByUserId: seededUsers["user-rapporteur"],
+      finalDecisionAt: new Date("2026-03-21T08:00:00.000Z"),
+    },
+    create: {
+      id: "proposal-school-canteen-2027",
+      submittedByUserId: seededUsers["user-citizen-2"],
+      titleFr: "Controle de la restauration scolaire",
+      titleAr: "controle-restauration-scolaire",
+      descriptionFr:
+        "Proposition de controle sur les marches de restauration scolaire, la qualite des prestations et la traçabilite des denrees.",
+      descriptionAr: "controle-restauration-scolaire",
+      categoryId: themeLocal.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.REJETEE,
+      assignedChamberId: chamberLocal.id,
+      assignedPresidentUserId: seededUsers["user-president-local"],
+      transmittedToRapporteurAt: new Date("2026-03-14T08:00:00.000Z"),
+      finalDecidedByUserId: seededUsers["user-rapporteur"],
+      finalDecisionAt: new Date("2026-03-21T08:00:00.000Z"),
+    },
+  });
+
+  const proposalStale = await prisma.proposal.upsert({
+    where: { id: "proposal-digital-archives-2027" },
+    update: {
+      titleFr: "Archivage numerique des marches publics",
+      titleAr: "archivage-numerique-marches-publics",
+      descriptionFr:
+        "Analyse des outils d'archivage, de la conservation des pieces et de la disponibilite des traces documentaires pour les marches publics.",
+      descriptionAr: "archivage-numerique-marches-publics",
+      categoryId: themeTransport.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.NON_ACTUALISEE,
+      assignedChamberId: chamberFinance.id,
+      assignedPresidentUserId: seededUsers["user-president-finance"],
+      transmittedToRapporteurAt: new Date("2026-03-11T10:00:00.000Z"),
+      finalDecidedByUserId: seededUsers["user-rapporteur"],
+      finalDecisionAt: new Date("2026-03-27T13:00:00.000Z"),
+    },
+    create: {
+      id: "proposal-digital-archives-2027",
+      submittedByUserId: seededUsers["user-org-2"],
+      titleFr: "Archivage numerique des marches publics",
+      titleAr: "archivage-numerique-marches-publics",
+      descriptionFr:
+        "Analyse des outils d'archivage, de la conservation des pieces et de la disponibilite des traces documentaires pour les marches publics.",
+      descriptionAr: "archivage-numerique-marches-publics",
+      categoryId: themeTransport.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.NON_ACTUALISEE,
+      assignedChamberId: chamberFinance.id,
+      assignedPresidentUserId: seededUsers["user-president-finance"],
+      transmittedToRapporteurAt: new Date("2026-03-11T10:00:00.000Z"),
+      finalDecidedByUserId: seededUsers["user-rapporteur"],
+      finalDecisionAt: new Date("2026-03-27T13:00:00.000Z"),
+    },
+  });
+
   for (const history of [
     {
       id: "proposal-history-hospital-1",
@@ -533,6 +759,38 @@ async function main() {
       changedByUserId: seededUsers["user-president-finance"],
       note: "Creation automatique depuis un signalement converti",
     },
+    {
+      id: "proposal-history-rejected-1",
+      proposalId: proposalRejected.id,
+      fromStatus: null,
+      toStatus: ProposalStatus.RECU,
+      changedByUserId: seededUsers["user-citizen-2"],
+      note: "Soumission initiale",
+    },
+    {
+      id: "proposal-history-rejected-2",
+      proposalId: proposalRejected.id,
+      fromStatus: ProposalStatus.RECU,
+      toStatus: ProposalStatus.REJETEE,
+      changedByUserId: seededUsers["user-rapporteur"],
+      note: "Theme hors priorites annuelles",
+    },
+    {
+      id: "proposal-history-stale-1",
+      proposalId: proposalStale.id,
+      fromStatus: null,
+      toStatus: ProposalStatus.RECU,
+      changedByUserId: seededUsers["user-org-2"],
+      note: "Soumission initiale",
+    },
+    {
+      id: "proposal-history-stale-2",
+      proposalId: proposalStale.id,
+      fromStatus: ProposalStatus.RECU,
+      toStatus: ProposalStatus.NON_ACTUALISEE,
+      changedByUserId: seededUsers["user-president-finance"],
+      note: "Informations non actualisees dans les delais",
+    },
   ]) {
     await prisma.proposalStatusHistory.upsert({
       where: { id: history.id },
@@ -556,6 +814,20 @@ async function main() {
       body: "Des comparaisons inter-wilayas seraient utiles pour mesurer l'efficacite du dispositif.",
       isPublic: true,
     },
+    {
+      id: "comment-rejected-1",
+      proposalId: proposalRejected.id,
+      userId: seededUsers["user-org-2"],
+      body: "Ce theme pourrait revenir dans un prochain exercice avec une focale regionale.",
+      isPublic: true,
+    },
+    {
+      id: "comment-stale-1",
+      proposalId: proposalStale.id,
+      userId: seededUsers["user-citizen"],
+      body: "Les archives numeriques restent un sujet cle mais il manque encore des elements documentes.",
+      isPublic: true,
+    },
   ]) {
     await prisma.proposalComment.upsert({
       where: { id: comment.id },
@@ -568,11 +840,219 @@ async function main() {
     { proposalId: proposalHospital.id, userId: seededUsers["user-citizen"] },
     { proposalId: proposalHospital.id, userId: seededUsers["user-org"] },
     { proposalId: proposalTransport.id, userId: seededUsers["user-citizen"] },
+    { proposalId: proposalRejected.id, userId: seededUsers["user-citizen"] },
+    { proposalId: proposalStale.id, userId: seededUsers["user-citizen-2"] },
+    { proposalId: proposalStale.id, userId: seededUsers["user-org-2"] },
   ]) {
     await prisma.proposalLike.upsert({
       where: {
         proposalId_userId: {
           proposalId: like.proposalId,
+          userId: like.userId,
+        },
+      },
+      update: {},
+      create: like,
+    });
+  }
+
+  for (const attachment of [
+    {
+      id: "proposal-attachment-hospital-1",
+      proposalId: proposalHospital.id,
+      fileName: "note-cadrage-hopitaux.pdf",
+      mimeType: "application/pdf",
+      fileSize: 412000,
+      storagePath: "/uploads/proposals/note-cadrage-hopitaux.pdf",
+      uploadedByUserId: seededUsers["user-citizen"],
+    },
+    {
+      id: "proposal-attachment-transport-1",
+      proposalId: proposalTransport.id,
+      fileName: "synthese-transport-urbain.docx",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      fileSize: 286000,
+      storagePath: "/uploads/proposals/synthese-transport-urbain.docx",
+      uploadedByUserId: seededUsers["user-org"],
+    },
+    {
+      id: "proposal-attachment-stale-1",
+      proposalId: proposalStale.id,
+      fileName: "inventaire-archives.csv",
+      mimeType: "text/csv",
+      fileSize: 96000,
+      storagePath: "/uploads/proposals/inventaire-archives.csv",
+      uploadedByUserId: seededUsers["user-org-2"],
+    },
+  ]) {
+    await prisma.proposalAttachment.upsert({
+      where: { id: attachment.id },
+      update: attachment,
+      create: attachment,
+    });
+  }
+
+  const reportSubjectFinance = await prisma.reportSubject.upsert({
+    where: { id: "report-subject-finance-2027" },
+    update: {
+      submittedByUserId: seededUsers["user-citizen"],
+      titleFr: "Controle des couts de maintenance des hopitaux universitaires",
+      titleAr: "ظ…ط±ط§ظ‚ط¨ط© طھظƒط§ظ„ظٹظپ طµظٹط§ظ†ط© ط§ظ„ظ…ط³طھط´ظپظٹط§طھ ط§ظ„ط¬ط§ظ…ط¹ظٹط©",
+      descriptionFr:
+        "Le sujet vise a comparer les marches de maintenance, les delais d'intervention et les couts reels supportes par les etablissements publics hospitaliers.",
+      descriptionAr:
+        "ظٹظ‡ط¯ظپ ط§ظ„ظ…ظˆط¶ظˆط¹ ط¥ظ„ظ‰ ظ…ظ‚ط§ط±ظ†ط© طµظپظ‚ط§طھ ط§ظ„طµظٹط§ظ†ط© ظˆط¢ط¬ط§ظ„ ط§ظ„طھط¯ط®ظ„ ظˆط§ظ„طھظƒط§ظ„ظٹظپ ط§ظ„ظپط¹ظ„ظٹط© ط§ظ„طھظٹ طھطھط­ظ…ظ„ظ‡ط§ ط§ظ„ظ…ط¤ط³ط³ط§طھ ط§ظ„ط§ط³طھط´ظپط§ط¦ظٹط© ط§ظ„ط¹ظ…ظˆظ…ظٹط©.",
+      categoryId: reportFinance.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.EN_COURS_ANALYSE,
+    },
+    create: {
+      id: "report-subject-finance-2027",
+      submittedByUserId: seededUsers["user-citizen"],
+      titleFr: "Controle des couts de maintenance des hopitaux universitaires",
+      titleAr: "ظ…ط±ط§ظ‚ط¨ط© طھظƒط§ظ„ظٹظپ طµظٹط§ظ†ط© ط§ظ„ظ…ط³طھط´ظپظٹط§طھ ط§ظ„ط¬ط§ظ…ط¹ظٹط©",
+      descriptionFr:
+        "Le sujet vise a comparer les marches de maintenance, les delais d'intervention et les couts reels supportes par les etablissements publics hospitaliers.",
+      descriptionAr:
+        "ظٹظ‡ط¯ظپ ط§ظ„ظ…ظˆط¶ظˆط¹ ط¥ظ„ظ‰ ظ…ظ‚ط§ط±ظ†ط© طµظپظ‚ط§طھ ط§ظ„طµظٹط§ظ†ط© ظˆط¢ط¬ط§ظ„ ط§ظ„طھط¯ط®ظ„ ظˆط§ظ„طھظƒط§ظ„ظٹظپ ط§ظ„ظپط¹ظ„ظٹط© ط§ظ„طھظٹ طھطھط­ظ…ظ„ظ‡ط§ ط§ظ„ظ…ط¤ط³ط³ط§طھ ط§ظ„ط§ط³طھط´ظپط§ط¦ظٹط© ط§ظ„ط¹ظ…ظˆظ…ظٹط©.",
+      categoryId: reportFinance.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.EN_COURS_ANALYSE,
+    },
+  });
+
+  const reportSubjectGovernance = await prisma.reportSubject.upsert({
+    where: { id: "report-subject-governance-2027" },
+    update: {
+      submittedByUserId: seededUsers["user-org"],
+      titleFr: "Suivi des delegations de service public dans le transport urbain",
+      titleAr: "ظ…طھط§ط¨ط¹ط© طھظپظˆظٹط¶ ط§ظ„ط®ط¯ظ…ط§طھ ط§ظ„ط¹ظ…ظˆظ…ظٹط© ظپظٹ ط§ظ„ظ†ظ‚ظ„ ط§ظ„ط­ط¶ط±ظٹ",
+      descriptionFr:
+        "La suggestion porte sur la transparence des contrats, les indicateurs de performance et les mecanismes de controle associes aux delegations de transport urbain.",
+      descriptionAr:
+        "ظٹطھط¹ظ„ظ‚ ط§ظ„ط§ظ‚طھط±ط§ط­ ط¨ط´ظپط§ظپظٹط© ط§ظ„ط¹ظ‚ظˆط¯ ظˆظ…ط¤ط´ط±ط§طھ ط§ظ„ط£ط¯ط§ط، وظآليات الرقابة المرتبطة بتفويضات النقل الحضري.",
+      categoryId: reportGovernance.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.RECU,
+    },
+    create: {
+      id: "report-subject-governance-2027",
+      submittedByUserId: seededUsers["user-org"],
+      titleFr: "Suivi des delegations de service public dans le transport urbain",
+      titleAr: "ظ…طھط§ط¨ط¹ط© طھظپظˆظٹط¶ ط§ظ„ط®ط¯ظ…ط§طھ ط§ظ„ط¹ظ…ظˆظ…ظٹط© ظپظٹ ط§ظ„ظ†ظ‚ظ„ ط§ظ„ط­ط¶ط±ظٹ",
+      descriptionFr:
+        "La suggestion porte sur la transparence des contrats, les indicateurs de performance et les mecanismes de controle associes aux delegations de transport urbain.",
+      descriptionAr:
+        "ظٹطھط¹ظ„ظ‚ ط§ظ„ط§ظ‚طھط±ط§ط­ ط¨ط´ظپط§ظپظٹط© ط§ظ„ط¹ظ‚ظˆط¯ ظˆظ…ط¤ط´ط±ط§طھ ط§ظ„ط£ط¯ط§ط، وظآليات الرقابة المرتبطة بتفويضات النقل الحضري.",
+      categoryId: reportGovernance.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.RECU,
+    },
+  });
+
+  const reportSubjectAccepted = await prisma.reportSubject.upsert({
+    where: { id: "report-subject-procurement-2027" },
+    update: {
+      submittedByUserId: seededUsers["user-citizen-2"],
+      titleFr: "Controle des avenants dans les marches publics communaux",
+      titleAr: "controle-avenants-marches-communaux",
+      descriptionFr:
+        "Suggestion portant sur la frequence des avenants, leur justification et l'evolution financiere des marches publics communaux.",
+      descriptionAr: "controle-avenants-marches-communaux",
+      categoryId: "report-public-procurement",
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.ACCEPTEE,
+    },
+    create: {
+      id: "report-subject-procurement-2027",
+      submittedByUserId: seededUsers["user-citizen-2"],
+      titleFr: "Controle des avenants dans les marches publics communaux",
+      titleAr: "controle-avenants-marches-communaux",
+      descriptionFr:
+        "Suggestion portant sur la frequence des avenants, leur justification et l'evolution financiere des marches publics communaux.",
+      descriptionAr: "controle-avenants-marches-communaux",
+      categoryId: "report-public-procurement",
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.ACCEPTEE,
+    },
+  });
+
+  const reportSubjectRejected = await prisma.reportSubject.upsert({
+    where: { id: "report-subject-school-2027" },
+    update: {
+      submittedByUserId: seededUsers["user-org-2"],
+      titleFr: "Controle des achats de fournitures scolaires",
+      titleAr: "controle-fournitures-scolaires",
+      descriptionFr:
+        "Suggestion citoyenne sur la programmation des achats, la livraison et la qualite des fournitures scolaires dans plusieurs wilayas.",
+      descriptionAr: "controle-fournitures-scolaires",
+      categoryId: reportFinance.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.REJETEE,
+    },
+    create: {
+      id: "report-subject-school-2027",
+      submittedByUserId: seededUsers["user-org-2"],
+      titleFr: "Controle des achats de fournitures scolaires",
+      titleAr: "controle-fournitures-scolaires",
+      descriptionFr:
+        "Suggestion citoyenne sur la programmation des achats, la livraison et la qualite des fournitures scolaires dans plusieurs wilayas.",
+      descriptionAr: "controle-fournitures-scolaires",
+      categoryId: reportFinance.id,
+      exerciseYear: 2027,
+      currentStatus: ProposalStatus.REJETEE,
+    },
+  });
+
+  for (const comment of [
+    {
+      id: "report-subject-comment-1",
+      reportSubjectId: reportSubjectFinance.id,
+      userId: seededUsers["user-org"],
+      body: "Une comparaison entre CHU et etablissements regionaux serait tres utile.",
+      isPublic: true,
+    },
+    {
+      id: "report-subject-comment-2",
+      reportSubjectId: reportSubjectGovernance.id,
+      userId: seededUsers["user-citizen"],
+      body: "Le suivi des indicateurs contractuels devrait etre publie wilaya par wilaya.",
+      isPublic: true,
+    },
+    {
+      id: "report-subject-comment-3",
+      reportSubjectId: reportSubjectAccepted.id,
+      userId: seededUsers["user-org"],
+      body: "Les avenants repetitifs meritaient deja une revue systematique.",
+      isPublic: true,
+    },
+    {
+      id: "report-subject-comment-4",
+      reportSubjectId: reportSubjectRejected.id,
+      userId: seededUsers["user-citizen-2"],
+      body: "Le sujet reste interessant meme s'il n'est pas retenu cette annee.",
+      isPublic: true,
+    },
+  ]) {
+    await prisma.reportSubjectComment.upsert({
+      where: { id: comment.id },
+      update: comment,
+      create: comment,
+    });
+  }
+
+  for (const like of [
+    { reportSubjectId: reportSubjectFinance.id, userId: seededUsers["user-citizen"] },
+    { reportSubjectId: reportSubjectFinance.id, userId: seededUsers["user-org"] },
+    { reportSubjectId: reportSubjectGovernance.id, userId: seededUsers["user-citizen"] },
+    { reportSubjectId: reportSubjectAccepted.id, userId: seededUsers["user-citizen"] },
+    { reportSubjectId: reportSubjectAccepted.id, userId: seededUsers["user-org-2"] },
+    { reportSubjectId: reportSubjectRejected.id, userId: seededUsers["user-citizen-2"] },
+  ]) {
+    await prisma.reportSubjectLike.upsert({
+      where: {
+        reportSubjectId_userId: {
+          reportSubjectId: like.reportSubjectId,
           userId: like.userId,
         },
       },
@@ -706,6 +1186,42 @@ async function main() {
     },
   });
 
+  for (const attachment of [
+    {
+      id: "report-attachment-finance-1",
+      reportId: reportPending.id,
+      fileName: "pieces-marche-local.pdf",
+      mimeType: "application/pdf",
+      fileSize: 524000,
+      storagePath: "/uploads/reports/pieces-marche-local.pdf",
+      uploadedByUserId: seededUsers["user-citizen"],
+    },
+    {
+      id: "report-attachment-governance-1",
+      reportId: reportConverted.id,
+      fileName: "releve-fournitures.xlsx",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      fileSize: 198000,
+      storagePath: "/uploads/reports/releve-fournitures.xlsx",
+      uploadedByUserId: seededUsers["user-citizen"],
+    },
+    {
+      id: "report-attachment-rejected-1",
+      reportId: "report-rejected-001",
+      fileName: "declaration-partielle.txt",
+      mimeType: "text/plain",
+      fileSize: 24000,
+      storagePath: "/uploads/reports/declaration-partielle.txt",
+      uploadedByUserId: seededUsers["user-org"],
+    },
+  ]) {
+    await prisma.reportAttachment.upsert({
+      where: { id: attachment.id },
+      update: attachment,
+      create: attachment,
+    });
+  }
+
   await prisma.report.upsert({
     where: { id: "report-rejected-001" },
     update: {
@@ -750,6 +1266,73 @@ async function main() {
     },
   });
 
+  const reportProcurement = await prisma.report.upsert({
+    where: { id: "report-procurement-001" },
+    update: {
+      submittedByUserId: seededUsers["user-citizen-2"],
+      subject: "Avenants repetitifs sur des marches d'equipement communal",
+      targetEntityName: "Ministere des Finances",
+      targetEntityType: "CENTRAL",
+      centralAdministrationId: "central-finance",
+      address: "Alger",
+      relationToEntity: "Consultant externe",
+      circumstance: "Analyse documentaire",
+      factsLocation: "Direction de la commande publique",
+      factsPeriodicity: "Recurrente",
+      irregularityDescription:
+        "Le signalement porte sur des avenants successifs et une hausse inhabituelle des montants dans plusieurs marches d'equipement communal.",
+      reportCategoryId: "report-public-procurement",
+      reportDate: new Date("2026-03-22T09:30:00.000Z"),
+      currentStatus: ReportStatus.NON_TRAITE,
+      assignedChamberId: chamberFinance.id,
+      assignedPresidentUserId: seededUsers["user-president-finance"],
+      acknowledgementNumber: "AR-2026-00518",
+      generatedProposalId: null,
+    },
+    create: {
+      id: "report-procurement-001",
+      submittedByUserId: seededUsers["user-citizen-2"],
+      subject: "Avenants repetitifs sur des marches d'equipement communal",
+      targetEntityName: "Ministere des Finances",
+      targetEntityType: "CENTRAL",
+      centralAdministrationId: "central-finance",
+      address: "Alger",
+      relationToEntity: "Consultant externe",
+      circumstance: "Analyse documentaire",
+      factsLocation: "Direction de la commande publique",
+      factsPeriodicity: "Recurrente",
+      irregularityDescription:
+        "Le signalement porte sur des avenants successifs et une hausse inhabituelle des montants dans plusieurs marches d'equipement communal.",
+      reportCategoryId: "report-public-procurement",
+      reportDate: new Date("2026-03-22T09:30:00.000Z"),
+      currentStatus: ReportStatus.NON_TRAITE,
+      assignedChamberId: chamberFinance.id,
+      assignedPresidentUserId: seededUsers["user-president-finance"],
+      acknowledgementNumber: "AR-2026-00518",
+    },
+  });
+
+  await prisma.reportAttachment.upsert({
+    where: { id: "report-attachment-procurement-1" },
+    update: {
+      reportId: reportProcurement.id,
+      fileName: "avenants-communes.pdf",
+      mimeType: "application/pdf",
+      fileSize: 438000,
+      storagePath: "/uploads/reports/avenants-communes.pdf",
+      uploadedByUserId: seededUsers["user-citizen-2"],
+    },
+    create: {
+      id: "report-attachment-procurement-1",
+      reportId: reportProcurement.id,
+      fileName: "avenants-communes.pdf",
+      mimeType: "application/pdf",
+      fileSize: 438000,
+      storagePath: "/uploads/reports/avenants-communes.pdf",
+      uploadedByUserId: seededUsers["user-citizen-2"],
+    },
+  });
+
   for (const history of [
     {
       id: "report-history-pending-1",
@@ -774,6 +1357,14 @@ async function main() {
       toStatus: ReportStatus.CONVERTI_EN_THEME,
       changedByUserId: seededUsers["user-president-finance"],
       note: "Conversion du signalement en theme",
+    },
+    {
+      id: "report-history-procurement-1",
+      reportId: reportProcurement.id,
+      fromStatus: null,
+      toStatus: ReportStatus.NON_TRAITE,
+      changedByUserId: seededUsers["user-citizen-2"],
+      note: "Soumission initiale",
     },
   ]) {
     await prisma.reportStatusHistory.upsert({
@@ -816,6 +1407,22 @@ async function main() {
       body: `Le signalement ${reportConverted.id} a ete converti sous le dossier ${generatedProposal.id}.`,
       channel: NotificationChannel.IN_APP,
     },
+    {
+      id: "notif-report-procurement",
+      userId: seededUsers["user-citizen-2"],
+      type: "REPORT_CREATED",
+      title: "Signalement commande publique enregistre",
+      body: `Le signalement ${reportProcurement.id} a recu l'accuse ${reportProcurement.acknowledgementNumber}.`,
+      channel: NotificationChannel.EMAIL,
+    },
+    {
+      id: "notif-blocked-account",
+      userId: seededUsers["user-citizen-3"],
+      type: "ACCOUNT_BLOCKED",
+      title: "Compte temporairement bloque",
+      body: "Votre compte est temporairement bloque dans l'attente d'une verification complementaire.",
+      channel: NotificationChannel.IN_APP,
+    },
   ]) {
     await prisma.notification.upsert({
       where: { id: notification.id },
@@ -849,6 +1456,22 @@ async function main() {
       resourceId: proposalTransport.id,
       metadataJson: { status: "ACCEPTEE" },
     },
+    {
+      id: "audit-4",
+      actorUserId: seededUsers["user-president-local"],
+      action: "UPDATE_PROPOSAL_STATUS",
+      resourceType: "proposal",
+      resourceId: proposalRejected.id,
+      metadataJson: { status: "REJETEE" },
+    },
+    {
+      id: "audit-5",
+      actorUserId: seededUsers["user-president-finance"],
+      action: "CREATE_REPORT",
+      resourceType: "report",
+      resourceId: reportProcurement.id,
+      metadataJson: { acknowledgement: reportProcurement.acknowledgementNumber },
+    },
   ]) {
     await prisma.auditLog.upsert({
       where: { id: log.id },
@@ -857,7 +1480,49 @@ async function main() {
     });
   }
 
-  console.log("Seed complete with reference data, demo accounts, workflows, notifications and public content.");
+  await prisma.accountBlock.upsert({
+    where: { id: "account-block-org-review" },
+    update: {
+      userId: seededUsers["user-org"],
+      blockedByUserId: seededUsers["user-admin"],
+      reason: "Blocage temporaire pendant verification complementaire du dossier organisation.",
+      startsAt: new Date("2026-03-10T09:00:00.000Z"),
+      endsAt: new Date("2026-03-17T09:00:00.000Z"),
+      isPermanent: false,
+    },
+    create: {
+      id: "account-block-org-review",
+      userId: seededUsers["user-org"],
+      blockedByUserId: seededUsers["user-admin"],
+      reason: "Blocage temporaire pendant verification complementaire du dossier organisation.",
+      startsAt: new Date("2026-03-10T09:00:00.000Z"),
+      endsAt: new Date("2026-03-17T09:00:00.000Z"),
+      isPermanent: false,
+    },
+  });
+
+  await prisma.accountBlock.upsert({
+    where: { id: "account-block-citizen-review" },
+    update: {
+      userId: seededUsers["user-citizen-3"],
+      blockedByUserId: seededUsers["user-admin"],
+      reason: "Compte signale pour verification de coherence des informations d'identite.",
+      startsAt: new Date("2026-03-18T09:00:00.000Z"),
+      endsAt: null,
+      isPermanent: false,
+    },
+    create: {
+      id: "account-block-citizen-review",
+      userId: seededUsers["user-citizen-3"],
+      blockedByUserId: seededUsers["user-admin"],
+      reason: "Compte signale pour verification de coherence des informations d'identite.",
+      startsAt: new Date("2026-03-18T09:00:00.000Z"),
+      endsAt: null,
+      isPermanent: false,
+    },
+  });
+
+  console.log("Seed complete with reference data for every model, demo accounts, workflows, attachments, moderation and public content.");
 }
 
 main()

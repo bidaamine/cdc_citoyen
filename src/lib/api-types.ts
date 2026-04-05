@@ -21,6 +21,15 @@ export type PublicThemeDetail = {
   updatedAt: string;
   likes: number;
   comments: number;
+  viewerHasLiked?: boolean;
+  discussion: SuggestionCommentItem[];
+};
+
+export type SuggestionCommentItem = {
+  id: string;
+  author: string;
+  body: string;
+  createdAt: string;
 };
 
 export type ReportListItem = {
@@ -128,6 +137,33 @@ export type PublishedReportItem = {
   category: string;
   publishedAt: string;
   proposalId: string;
+};
+
+export type ReportSubjectListItem = {
+  id: string;
+  title: string;
+  category: string;
+  exercise: number;
+  status: string;
+  updatedAt: string;
+  likes: number;
+  comments: number;
+};
+
+export type PublicReportSubjectDetail = {
+  id: string;
+  title: string;
+  titleAr: string;
+  descriptionFr: string;
+  descriptionAr: string;
+  category: string;
+  exercise: number;
+  status: string;
+  updatedAt: string;
+  likes: number;
+  comments: number;
+  viewerHasLiked?: boolean;
+  discussion: SuggestionCommentItem[];
 };
 
 export type RapporteurSummary = {

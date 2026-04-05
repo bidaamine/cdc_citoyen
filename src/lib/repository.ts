@@ -13,14 +13,17 @@ import type {
   NotificationItem,
   OverviewResponse,
   PublicThemeDetail,
+  PublicReportSubjectDetail,
   PublishedReportItem,
   ProposalListItem,
+  ReportSubjectListItem,
   RapporteurSummary,
   PresidentSummary,
   ReportListItem,
   ProfileItem,
   SettingGroup,
   SettingRecord,
+  SuggestionCommentItem,
   StatsSeriesItem,
   TableQuery,
   UserAccountItem,
@@ -29,8 +32,10 @@ import { nextExerciseYear } from "@/lib/utils";
 import {
   participationRegistrationSchema,
   profileUpdateSchema,
+  publicCommentSchema,
   proposalSchema,
   reportSchema,
+  reportSubjectSchema,
   reportingRegistrationSchema,
 } from "@/lib/validators";
 
@@ -56,6 +61,15 @@ type ReportInput = {
   reportCategoryId: string;
 };
 
+type ReportSubjectInput = {
+  titleFr: string;
+  titleAr: string;
+  descriptionFr: string;
+  descriptionAr: string;
+  categoryId: string;
+  exerciseYear: number;
+};
+
 const fallbackProposals: ProposalListItem[] = proposalRows.map((row) => ({
   id: row.id,
   title: row.title,
@@ -75,6 +89,51 @@ const fallbackReports: ReportListItem[] = reportRows.map((row) => ({
   updatedAt: row.updatedAt,
   acknowledgement: row.acknowledgement,
 }));
+
+const fallbackReportSubjects: ReportSubjectListItem[] = [
+  {
+    id: "report-subject-2027-001",
+    title: "Controle des couts de maintenance des hopitaux universitaires",
+    category: "Irregularite financiere",
+    exercise: 2027,
+    status: "EN_COURS_ANALYSE",
+    updatedAt: "2026-04-01",
+    likes: 76,
+    comments: 8,
+  },
+  {
+    id: "report-subject-2027-002",
+    title: "Suivi des delegations de service public dans le transport urbain",
+    category: "Gouvernance",
+    exercise: 2027,
+    status: "RECU",
+    updatedAt: "2026-04-03",
+    likes: 42,
+    comments: 5,
+  },
+];
+
+const fallbackThemeComments: Record<string, SuggestionCommentItem[]> = {
+  "theme-2027-001": [
+    {
+      id: "fallback-theme-comment-1",
+      author: "Citoyen demo",
+      body: "Le sujet touche plusieurs structures et merite une comparaison entre etablissements.",
+      createdAt: "2026-03-20",
+    },
+  ],
+};
+
+const fallbackReportSubjectComments: Record<string, SuggestionCommentItem[]> = {
+  "report-subject-2027-001": [
+    {
+      id: "fallback-report-subject-comment-1",
+      author: "OSC demo",
+      body: "Un angle sur les contrats de maintenance et les delais d'execution serait pertinent.",
+      createdAt: "2026-04-02",
+    },
+  ],
+};
 
 const fallbackNotifications: NotificationItem[] = notifications.map((item, index) => ({
   id: `notif-${index + 1}`,
@@ -104,6 +163,29 @@ async function runWithFallback<T>(operation: () => Promise<T>, fallback: () => T
 
 function formatDate(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function formatSuggestionComment(comment: {
+  id: string;
+  body: string;
+  createdAt: Date;
+  user?: {
+    pseudonym?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  } | null;
+}) {
+  const author =
+    comment.user?.pseudonym?.trim() ||
+    [comment.user?.firstName, comment.user?.lastName].filter(Boolean).join(" ").trim() ||
+    "Citoyen";
+
+  return {
+    id: comment.id,
+    author,
+    body: comment.body,
+    createdAt: formatDate(comment.createdAt),
+  } satisfies SuggestionCommentItem;
 }
 
 function normalizeProposalStatus(status: string) {
@@ -263,6 +345,19 @@ async function resolveReportCategory(reportCategoryId: string) {
     (await db.reportCategory.findFirst({
       where: {
         OR: [{ id: reportCategoryId }, { nameFr: reportCategoryId }, { nameAr: reportCategoryId }],
+      },
+    })) ??
+    db.reportCategory.findFirst({
+      where: { isActive: true },
+    })
+  );
+}
+
+async function resolveReportSubjectCategory(categoryId: string) {
+  return (
+    (await db.reportCategory.findFirst({
+      where: {
+        OR: [{ id: categoryId }, { nameFr: categoryId }, { nameAr: categoryId }],
       },
     })) ??
     db.reportCategory.findFirst({
@@ -456,15 +551,28 @@ export const repository = {
     );
   },
 
-  async getPublicTheme(id: string): Promise<PublicThemeDetail | null> {
+  async getPublicTheme(id: string, userId?: string | null): Promise<PublicThemeDetail | null> {
     return runWithFallback(
       async () => {
+        const resolvedUserId = userId ?? null;
         const proposal = await db.proposal.findUnique({
           where: { id },
           include: {
             category: true,
             likes: true,
-            comments: true,
+            comments: {
+              where: { isPublic: true },
+              include: {
+                user: {
+                  select: {
+                    pseudonym: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+            },
           },
         });
 
@@ -482,6 +590,10 @@ export const repository = {
           updatedAt: formatDate(proposal.updatedAt),
           likes: proposal.likes.length,
           comments: proposal.comments.length,
+          viewerHasLiked: resolvedUserId
+            ? proposal.likes.some((like) => like.userId === resolvedUserId)
+            : false,
+          discussion: proposal.comments.map(formatSuggestionComment),
         };
       },
       () => {
@@ -500,7 +612,112 @@ export const repository = {
           updatedAt: proposal.updatedAt,
           likes: proposal.likes,
           comments: proposal.comments,
+          viewerHasLiked: false,
+          discussion: fallbackThemeComments[id] ?? [],
         };
+      },
+    );
+  },
+
+  async toggleProposalLike(id: string, userId?: string | null) {
+    return runWithFallback(
+      async () => {
+        const resolvedUserId = await resolveUserId(userId);
+        if (!resolvedUserId) {
+          return null;
+        }
+
+        const existing = await db.proposalLike.findUnique({
+          where: {
+            proposalId_userId: {
+              proposalId: id,
+              userId: resolvedUserId,
+            },
+          },
+        });
+
+        if (existing) {
+          await db.proposalLike.delete({ where: { id: existing.id } });
+        } else {
+          await db.proposalLike.create({
+            data: {
+              proposalId: id,
+              userId: resolvedUserId,
+            },
+          });
+        }
+
+        const likeCount = await db.proposalLike.count({ where: { proposalId: id } });
+
+        return {
+          liked: !existing,
+          likes: likeCount,
+        };
+      },
+      () => {
+        const proposal = fallbackProposals.find((entry) => entry.id === id);
+        if (!proposal) return null;
+        proposal.likes += 1;
+        return { liked: true, likes: proposal.likes };
+      },
+    );
+  },
+
+  async addProposalComment(id: string, body: string, userId?: string | null) {
+    const parsed = publicCommentSchema.safeParse({ body });
+
+    if (!parsed.success) {
+      return { error: parsed.error.flatten() } as const;
+    }
+
+    return runWithFallback(
+      async () => {
+        const resolvedUserId = await resolveUserId(userId);
+        if (!resolvedUserId) {
+          return null;
+        }
+
+        const comment = await db.proposalComment.create({
+          data: {
+            proposalId: id,
+            userId: resolvedUserId,
+            body: parsed.data.body,
+            isPublic: true,
+          },
+          include: {
+            user: {
+              select: {
+                pseudonym: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        });
+
+        const comments = await db.proposalComment.count({
+          where: { proposalId: id, isPublic: true },
+        });
+
+        return {
+          data: {
+            comment: formatSuggestionComment(comment),
+            comments,
+          },
+        } as const;
+      },
+      () => {
+        const proposal = fallbackProposals.find((entry) => entry.id === id);
+        if (!proposal) return null;
+        const created = {
+          id: `fallback-theme-comment-${Date.now()}`,
+          author: "Citoyen demo",
+          body: parsed.data.body,
+          createdAt: new Date().toISOString().slice(0, 10),
+        } satisfies SuggestionCommentItem;
+        fallbackThemeComments[id] = [created, ...(fallbackThemeComments[id] ?? [])];
+        proposal.comments += 1;
+        return { data: { comment: created, comments: proposal.comments } } as const;
       },
     );
   },
@@ -786,6 +1003,294 @@ export const repository = {
             matchesValue(report.category, filters.category) &&
             matchesValue(report.exercise, filters.exercise),
         ),
+    );
+  },
+
+  async listReportSubjects(filters: TableQuery = {}): Promise<ReportSubjectListItem[]> {
+    return runWithFallback(
+      async () => {
+        const subjects = await db.reportSubject.findMany({
+          orderBy: { updatedAt: "desc" },
+          include: {
+            category: true,
+            likes: true,
+            comments: {
+              where: { isPublic: true },
+            },
+          },
+          take: 24,
+        });
+
+        return subjects
+          .map((subject) => ({
+            id: subject.id,
+            title: subject.titleFr,
+            category: subject.category.nameFr,
+            exercise: subject.exerciseYear,
+            status: String(subject.currentStatus),
+            updatedAt: formatDate(subject.updatedAt),
+            likes: subject.likes.length,
+            comments: subject.comments.length,
+          }))
+          .filter(
+            (subject) =>
+              matchesQuery([subject.title, subject.category], filters.q) &&
+              matchesStatus(subject.status, filters.status) &&
+              matchesValue(subject.category, filters.category) &&
+              matchesValue(subject.exercise, filters.exercise),
+          );
+      },
+      () =>
+        [...fallbackReportSubjects]
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          .filter(
+            (subject) =>
+              matchesQuery([subject.title, subject.category], filters.q) &&
+              matchesStatus(subject.status, filters.status) &&
+              matchesValue(subject.category, filters.category) &&
+              matchesValue(subject.exercise, filters.exercise),
+          ),
+    );
+  },
+
+  async getReportSubject(id: string, userId?: string | null): Promise<PublicReportSubjectDetail | null> {
+    return runWithFallback(
+      async () => {
+        const resolvedUserId = userId ?? null;
+        const subject = await db.reportSubject.findUnique({
+          where: { id },
+          include: {
+            category: true,
+            likes: true,
+            comments: {
+              where: { isPublic: true },
+              include: {
+                user: {
+                  select: {
+                    pseudonym: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+            },
+          },
+        });
+
+        if (!subject) return null;
+
+        return {
+          id: subject.id,
+          title: subject.titleFr,
+          titleAr: subject.titleAr,
+          descriptionFr: subject.descriptionFr,
+          descriptionAr: subject.descriptionAr,
+          category: subject.category.nameFr,
+          exercise: subject.exerciseYear,
+          status: String(subject.currentStatus),
+          updatedAt: formatDate(subject.updatedAt),
+          likes: subject.likes.length,
+          comments: subject.comments.length,
+          viewerHasLiked: resolvedUserId
+            ? subject.likes.some((like) => like.userId === resolvedUserId)
+            : false,
+          discussion: subject.comments.map(formatSuggestionComment),
+        };
+      },
+      () => {
+        const subject = fallbackReportSubjects.find((entry) => entry.id === id);
+        if (!subject) return null;
+
+        return {
+          id: subject.id,
+          title: subject.title,
+          titleAr: subject.title,
+          descriptionFr: `Sujet de rapport public propose pour ${subject.title}.`,
+          descriptionAr: `Sujet de rapport public propose pour ${subject.title}.`,
+          category: subject.category,
+          exercise: subject.exercise,
+          status: subject.status,
+          updatedAt: subject.updatedAt,
+          likes: subject.likes,
+          comments: subject.comments,
+          viewerHasLiked: false,
+          discussion: fallbackReportSubjectComments[id] ?? [],
+        };
+      },
+    );
+  },
+
+  async createReportSubject(input: ReportSubjectInput, userId?: string | null) {
+    const parsed = reportSubjectSchema.safeParse(input);
+
+    if (!parsed.success) {
+      return { error: parsed.error.flatten() } as const;
+    }
+
+    return runWithFallback(
+      async () => {
+        const submitterId = await resolveUserId(userId);
+        const category = await resolveReportSubjectCategory(parsed.data.categoryId);
+
+        if (!submitterId || !category) {
+          return {
+            error: {
+              formErrors: ["Aucun utilisateur citoyen ou categorie de rapport disponible dans la base."],
+              fieldErrors: {},
+            },
+          } as const;
+        }
+
+        const subject = await db.reportSubject.create({
+          data: {
+            submittedByUserId: submitterId,
+            titleFr: parsed.data.titleFr,
+            titleAr: parsed.data.titleAr,
+            descriptionFr: parsed.data.descriptionFr,
+            descriptionAr: parsed.data.descriptionAr,
+            categoryId: category.id,
+            exerciseYear: parsed.data.exerciseYear,
+            currentStatus: ProposalStatus.RECU,
+          },
+          include: {
+            category: true,
+            likes: true,
+            comments: true,
+          },
+        });
+
+        return {
+          data: {
+            id: subject.id,
+            title: subject.titleFr,
+            category: subject.category.nameFr,
+            exercise: subject.exerciseYear,
+            status: String(subject.currentStatus),
+            updatedAt: formatDate(subject.updatedAt),
+            likes: subject.likes.length,
+            comments: subject.comments.length,
+          } satisfies ReportSubjectListItem,
+        } as const;
+      },
+      () => {
+        const created: ReportSubjectListItem = {
+          id: `report-subject-${nextExerciseYear(new Date())}-${String(fallbackReportSubjects.length + 1).padStart(3, "0")}`,
+          title: parsed.data.titleFr,
+          category: parsed.data.categoryId,
+          exercise: parsed.data.exerciseYear,
+          status: "RECU",
+          updatedAt: new Date().toISOString().slice(0, 10),
+          likes: 0,
+          comments: 0,
+        };
+
+        fallbackReportSubjects.unshift(created);
+        return { data: created } as const;
+      },
+    );
+  },
+
+  async toggleReportSubjectLike(id: string, userId?: string | null) {
+    return runWithFallback(
+      async () => {
+        const resolvedUserId = await resolveUserId(userId);
+        if (!resolvedUserId) {
+          return null;
+        }
+
+        const existing = await db.reportSubjectLike.findUnique({
+          where: {
+            reportSubjectId_userId: {
+              reportSubjectId: id,
+              userId: resolvedUserId,
+            },
+          },
+        });
+
+        if (existing) {
+          await db.reportSubjectLike.delete({ where: { id: existing.id } });
+        } else {
+          await db.reportSubjectLike.create({
+            data: {
+              reportSubjectId: id,
+              userId: resolvedUserId,
+            },
+          });
+        }
+
+        const likeCount = await db.reportSubjectLike.count({ where: { reportSubjectId: id } });
+
+        return {
+          liked: !existing,
+          likes: likeCount,
+        };
+      },
+      () => {
+        const subject = fallbackReportSubjects.find((entry) => entry.id === id);
+        if (!subject) return null;
+        subject.likes += 1;
+        return { liked: true, likes: subject.likes };
+      },
+    );
+  },
+
+  async addReportSubjectComment(id: string, body: string, userId?: string | null) {
+    const parsed = publicCommentSchema.safeParse({ body });
+
+    if (!parsed.success) {
+      return { error: parsed.error.flatten() } as const;
+    }
+
+    return runWithFallback(
+      async () => {
+        const resolvedUserId = await resolveUserId(userId);
+        if (!resolvedUserId) {
+          return null;
+        }
+
+        const comment = await db.reportSubjectComment.create({
+          data: {
+            reportSubjectId: id,
+            userId: resolvedUserId,
+            body: parsed.data.body,
+            isPublic: true,
+          },
+          include: {
+            user: {
+              select: {
+                pseudonym: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        });
+
+        const comments = await db.reportSubjectComment.count({
+          where: { reportSubjectId: id, isPublic: true },
+        });
+
+        return {
+          data: {
+            comment: formatSuggestionComment(comment),
+            comments,
+          },
+        } as const;
+      },
+      () => {
+        const subject = fallbackReportSubjects.find((entry) => entry.id === id);
+        if (!subject) return null;
+        const created = {
+          id: `fallback-report-subject-comment-${Date.now()}`,
+          author: "Citoyen demo",
+          body: parsed.data.body,
+          createdAt: new Date().toISOString().slice(0, 10),
+        } satisfies SuggestionCommentItem;
+        fallbackReportSubjectComments[id] = [created, ...(fallbackReportSubjectComments[id] ?? [])];
+        subject.comments += 1;
+        return { data: { comment: created, comments: subject.comments } } as const;
+      },
     );
   },
 

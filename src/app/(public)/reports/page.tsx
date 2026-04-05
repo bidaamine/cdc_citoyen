@@ -1,15 +1,15 @@
 import { PublicReportsContent } from "@/components/app/public-reports-content";
-import { getPublishedReports } from "@/lib/queries";
+import { getReportSubjects } from "@/lib/queries";
 
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string; exercise?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; category?: string; exercise?: string }>;
 }) {
   const filters = await searchParams;
-  const [reports, allReports] = await Promise.all([getPublishedReports(filters), getPublishedReports()]);
+  const [reports, allReports] = await Promise.all([getReportSubjects(filters), getReportSubjects()]);
   const categoryOptions = [...new Set(allReports.map((row) => row.category))].sort();
-  const exerciseOptions = [...new Set(allReports.map((row) => row.exercise))].sort();
+  const exerciseOptions = [...new Set(allReports.map((row) => String(row.exercise)))].sort();
 
   return (
     <PublicReportsContent

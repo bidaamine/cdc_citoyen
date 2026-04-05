@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 
 import { BulletList, InfoCard } from "@/components/app/blocks";
 import { PageShell } from "@/components/app/page-shell";
+import { SuggestionEngagement } from "@/components/app/suggestion-engagement";
 import { StatusBadge } from "@/components/app/status-badge";
-import { getPublicTheme } from "@/lib/queries";
+import { getPublicThemeForViewer } from "@/lib/queries";
+import { getCurrentUserId } from "@/lib/session";
 
 export default async function ThemeDetailPage({
   params,
@@ -11,7 +13,8 @@ export default async function ThemeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const proposal = await getPublicTheme(id);
+  const userId = await getCurrentUserId();
+  const proposal = await getPublicThemeForViewer(id, userId);
 
   if (!proposal) {
     notFound();
@@ -41,12 +44,15 @@ export default async function ThemeDetailPage({
         <p className="text-sm leading-7 text-[var(--muted-foreground)]">{proposal.descriptionAr}</p>
       </InfoCard>
       <InfoCard title="Interactions" description="Etat public du theme sur la plateforme.">
-        <BulletList
-          items={[
-            `Likes recenses: ${proposal.likes}`,
-            `Commentaires recenses: ${proposal.comments}`,
-            `Statut courant: ${proposal.status}`,
-          ]}
+        <BulletList items={[`Likes recenses: ${proposal.likes}`, `Commentaires recenses: ${proposal.comments}`, `Statut courant: ${proposal.status}`]} />
+      </InfoCard>
+      <InfoCard title="Discussion citoyenne" description="Les citoyens peuvent soutenir et commenter publiquement cette suggestion.">
+        <SuggestionEngagement
+          endpointBase={`/api/proposals/${proposal.id}`}
+          initialLikes={proposal.likes}
+          initialComments={proposal.comments}
+          initialViewerHasLiked={proposal.viewerHasLiked}
+          initialDiscussion={proposal.discussion}
         />
       </InfoCard>
     </PageShell>

@@ -105,6 +105,9 @@ model User {
   reportStatusChanges       ReportStatusHistory[]
   publishedSummaries        ProposalSummary[]
   publishedFinalReports     ProposalFinalReport[]
+  reportSubjects            ReportSubject[]
+  reportSubjectComments     ReportSubjectComment[]
+  reportSubjectLikes        ReportSubjectLike[]
 }
 
 model Role {
@@ -152,6 +155,7 @@ model ReportCategory {
   nameAr   String
   isActive Boolean  @default(true)
   reports  Report[]
+  reportSubjects ReportSubject[]
 }
 
 model Wilaya {
@@ -335,6 +339,46 @@ model ReportAttachment {
   createdAt        DateTime @default(now())
   report           Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
   uploadedByUser   User     @relation(fields: [uploadedByUserId], references: [id])
+}
+
+model ReportSubject {
+  id               String               @id @default(cuid())
+  submittedByUserId String
+  titleFr          String
+  titleAr          String
+  descriptionFr    String               @db.Text
+  descriptionAr    String               @db.Text
+  categoryId       String
+  exerciseYear     Int
+  currentStatus    ProposalStatus       @default(RECU)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  submittedByUser  User                 @relation(fields: [submittedByUserId], references: [id])
+  category         ReportCategory       @relation(fields: [categoryId], references: [id])
+  comments         ReportSubjectComment[]
+  likes            ReportSubjectLike[]
+}
+
+model ReportSubjectComment {
+  id              String        @id @default(cuid())
+  reportSubjectId String
+  userId          String
+  body            String        @db.Text
+  isPublic        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  reportSubject   ReportSubject @relation(fields: [reportSubjectId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id])
+}
+
+model ReportSubjectLike {
+  id              String        @id @default(cuid())
+  reportSubjectId String
+  userId          String
+  createdAt       DateTime      @default(now())
+  reportSubject   ReportSubject @relation(fields: [reportSubjectId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id])
+
+  @@unique([reportSubjectId, userId])
 }
 
 model ReportStatusHistory {

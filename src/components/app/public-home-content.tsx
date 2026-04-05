@@ -44,26 +44,26 @@ export function PublicHomeContent({
         </>
       }
     >
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-[32px] bg-[var(--sidebar)] p-8 text-white shadow-[0_30px_70px_rgba(12,22,55,0.22)]">
-          <p className="text-sm uppercase tracking-[0.28em] text-white/70">{t.home.moduleOne}</p>
-          <h2 className="mt-4 text-3xl font-semibold">{t.home.participationTitle}</h2>
-          <p className="mt-4 max-w-xl text-white/78">{t.home.participationBody}</p>
-          <Button className="mt-6" asChild>
+      <section className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--sidebar)] p-8 text-white shadow-lg">
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-200">{t.home.moduleOne}</p>
+          <h2 className="mt-3 text-2xl font-bold tracking-tight">{t.home.participationTitle}</h2>
+          <p className="mt-4 max-w-xl text-slate-300">{t.home.participationBody}</p>
+          <Button className="mt-6 bg-blue-600 hover:bg-blue-700 text-white" asChild>
             <Link href="/participation">
               {t.home.participationCta}
-              <ArrowRight className="size-4" />
+              <ArrowRight className="size-4 ml-2" />
             </Link>
           </Button>
         </div>
-        <div className="rounded-[32px] bg-[var(--secondary)] p-8 text-white shadow-[0_30px_70px_rgba(194,65,12,0.16)]">
-          <p className="text-sm uppercase tracking-[0.28em] text-white/70">{t.home.moduleTwo}</p>
-          <h2 className="mt-4 text-3xl font-semibold">{t.home.reportingTitle}</h2>
-          <p className="mt-4 max-w-xl text-white/82">{t.home.reportingBody}</p>
-          <Button variant="secondary" className="mt-6 bg-white text-[var(--secondary)]" asChild>
+        <div className="rounded-xl border border-[var(--border)] bg-white p-8 text-[var(--foreground)] shadow-lg">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t.home.moduleTwo}</p>
+          <h2 className="mt-3 text-2xl font-bold tracking-tight">{t.home.reportingTitle}</h2>
+          <p className="mt-4 max-w-xl text-slate-600">{t.home.reportingBody}</p>
+          <Button variant="outline" className="mt-6 border-slate-300 text-slate-700 hover:bg-slate-50" asChild>
             <Link href="/signalement">
               {t.home.reportingCta}
-              <ArrowRight className="size-4" />
+              <ArrowRight className="size-4 ml-2" />
             </Link>
           </Button>
         </div>

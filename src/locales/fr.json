@@ -160,9 +160,12 @@
       "report": "Rapport",
       "exercise": "Exercice",
       "category": "Categorie",
-      "publishedAt": "Publication"
+      "publishedAt": "Publication",
+      "status": "Statut",
+      "engagement": "Engagement"
     },
     "searchPlaceholder": "Rechercher un rapport, une categorie ou un exercice...",
+    "allStatuses": "Tous les statuts",
     "allCategories": "Toutes les categories",
     "allExercises": "Tous les exercices",
     "empty": "Aucun rapport public n'est encore disponible."

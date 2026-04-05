@@ -17,12 +17,24 @@ export async function getPublicTheme(id: string) {
   return repository.getPublicTheme(id);
 }
 
+export async function getPublicThemeForViewer(id: string, userId?: string | null) {
+  return repository.getPublicTheme(id, userId);
+}
+
 export async function getCitizenReports(userId?: string | null) {
   return repository.listReports(userId);
 }
 
 export async function getPublishedReports(filters: TableQuery = {}) {
   return repository.listPublishedReports(filters);
+}
+
+export async function getReportSubjects(filters: TableQuery = {}) {
+  return repository.listReportSubjects(filters);
+}
+
+export async function getReportSubject(id: string, userId?: string | null) {
+  return repository.getReportSubject(id, userId);
 }
 
 export async function getPresidentProposals(userId: string, filters: TableQuery = {}) {
